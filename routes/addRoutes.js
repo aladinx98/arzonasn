@@ -32,7 +32,7 @@ router.post('/addReward', async (req, res) => {
     const amount = req.body.amount;
 
     try {
-        const walletaddressRefaralGetData = await Add.find(); // Assuming Add is the model for contractor data
+        const walletaddressRefaralGetData = await Add.find();
 
         const rewardPercentages = [
             40, 20, 10, 5, 2.5, 1.25, 1.25, 1.25, 1.25, 1.25,

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+
 const contractorSchema = new mongoose.Schema({
     userId: { type: Number, unique: true },
     username: { type: String, required: true },
