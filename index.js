@@ -9,7 +9,7 @@ const addRoutes = require("./routes/addRoutes");
 const contractorRoutes = require("./routes/contractorRoutes");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3300;
 mongoose.set("strictQuery", false);
 app.use(bodyParser.json());
 app.use(
@@ -32,7 +32,7 @@ mongoose
     // .connect("mongodb+srv://aladinx98:DCXRZpyZ0aSx2swa@cluster0.qsyiecy.mongodb.net/", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-  })
+    })
   .then(() => {
     console.log("MongoDB connected...");
     // Drop the unique index on the email field

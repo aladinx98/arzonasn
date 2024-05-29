@@ -6,9 +6,10 @@ const buySchema = new mongoose.Schema({
     buyAmount: { type: String},
     balARZ: { type: String},
     referral: { type: String },
+    walletAddress: { type: String },
     createdAt: { type: Date, default: Date.now }
 });
 
-buySchema.index({ userId: 0 }, { unique: false });
+// buySchema.index({ userId: 0 }, { unique: false });
 
 module.exports = mongoose.model('Buy', buySchema);

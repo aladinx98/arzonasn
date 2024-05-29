@@ -1,6 +1,5 @@
 const express = require("express");
 const User = require("../models/Contractor");
-const Adds = require('../models/add');
 var ejs = require("ejs");
 const bcrypt = require("bcryptjs");
 require("dotenv").config();
@@ -55,8 +54,8 @@ router.post("/verifyOTP", async (req, res) => {
         __dirname + '/verify.ejs',
         {
           name: 'arzonateam@gmail.com',
-          username: user.username,
-          userid: user.userId,
+          username: User.username,
+          userid: User.userId,
         },
         async function (err, mail) {
           if (err) {
@@ -84,6 +83,29 @@ router.post("/verifyOTP", async (req, res) => {
   }
 });
 
+//   router.post('/signup', async (req, res) => {
+//     const { username, email, referredBy, password } = req.body;
+
+//     try {
+//         const otp = Math.floor(100000 + Math.random() * 900000);
+//         const saltRounds = 10;
+//         const hashedPassword = await bcrypt.hash(password, saltRounds);
+//         const mailOptions = {
+//             from: process.env.EMAIL,
+//             to: email,
+//             subject: 'Verification OTP',
+//             text: `Your OTP for registration is: ${otp}`
+//         };
+//         await transporter.sendMail(mailOptions);
+//         const newUser = new User({ username, email, referredBy, password: hashedPassword, otp });
+//         await newUser.save();
+
+//         res.status(201).json({ message: 'User created successfully', userId: newUser.userId });
+//     } catch (err) {
+//         console.error('Error creating user:', err);
+//         res.status(500).json({ error: 'Failed to create user' });
+//     }
+// });
 
 router.post('/signup', async (req, res) => {
   const { username, email, referredBy, password } = req.body;
@@ -151,7 +173,7 @@ router.post('/signup', async (req, res) => {
 
 router.get("/user", authUser, async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.userId; // Assuming authUser middleware sets req.userId
     const user = await User.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -163,40 +185,73 @@ router.get("/user", authUser, async (req, res) => {
   }
 });
 
+//   router.get('/users', async (req, res) => {
+//     try {
+//         const users = await User.find().select('-password -otp');
+//         res.status(200).json(users);
+//     } catch (error) {
+//         console.error('Error fetching users data:', error);
+//         res.status(500).json({ error: 'Failed to fetch users data' });
+//     }
+// });
 
 router.post("/connectWallet", authUser, async (req, res) => {
-  const { walletAddress, refferralAddress, status } = req.body;
+  const { walletAddress } = req.body;
 
   if (!walletAddress) {
     return res.status(400).json({ message: "Wallet address is required" });
   }
 
   try {
-    const user = await User.findById(req.userId);
+    // Find the user by their ID
+    const user = await User.findById(req.userId); // Assuming authUser middleware sets req.userId
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Check if the user already has a wallet address
+    if (user.walletAddress) {
+      return res
+        .status(400)
+        .json({ message: "Wallet address has already been connected" });
+    }
+
+
+    // Check if the wallet address is already in use by another user
     const existingUser = await User.findOne({ walletAddress });
     if (existingUser) {
       return res.status(400).json({ message: "Wallet address is already in use by another user" });
     }
 
-    user.status = status;
+
+    // Update the user's wallet address
     user.walletAddress = walletAddress;
     await user.save();
 
-    // console.log(`User updated: ${JSON.stringify(user)}`);
-
-    await Adds.create({ walletAddress, refferralAddress });
-
-    // console.log(`Added to Adds: walletAddress=${walletAddress}, referralAddress=${refferralAddress}`);
-
     res.json({ message: "Wallet address updated successfully" });
   } catch (error) {
-    console.error('Error updating wallet address:', error);
-    res.status(500).json({ message: "Error updating wallet address", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error updating wallet address", error: error.message });
+  }
+});
+
+router.post("/user/updateStatus", async (req, res) => {
+  const { walletAddress, status } = req.body;
+
+  try {
+    const user = await User.findOne({ walletAddress });
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    user.status = status;
+    await user.save();
+
+    res.send("Status updated successfully");
+  } catch (error) {
+    res.status(500).send("Server error");
   }
 });
 
@@ -218,6 +273,24 @@ router.post("/login-with-userid", async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid password" });
     }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // Send OTP to user's email
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: user.email,
+      subject: "Verification OTP",
+      text: `Your OTP for login is: ${otp}`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    // Store OTP in the database
+    user.otp = otp;
+    await user.save();
+
     // Return token and message
     const token = jwt.sign(
       { userId: user._id },
@@ -263,7 +336,7 @@ router.post('/forgot-password', async (req, res) => {
         const mailOptions = {
           from: process.env.EMAIL,
           to: user.email,
-          subject: 'Forget Password Mail',
+          subject: 'Verification OTP for Password Reset',
           html: mail
         };
 
@@ -312,5 +385,99 @@ router.put('/reset-password', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+// app.post('/logout', (req, res) => {
+//     res.json({ message: 'Logout successful' });
+//   });
+
+// router.post("/reset-password", async (req, res) => {
+//   const otp = Math.floor(Math.random() * 9000 + 1000);
+//   const { email } = req.body;
+
+//   if (!email) {
+//     return res.status(403).json({
+//       message: "Please fill all the fields",
+//     });
+//   }
+
+//   try {
+//     const user = await User.findOne({ email });
+//     if (!user) {
+//       return res.status(403).json({
+//         message: "User with this email does not exist",
+//       });
+//     } else {
+//       user.otp = otp;
+//       await user.save();
+//       const mailData = {
+//         from: process.env.EMAIL,
+//         to: req.body.email,
+//         subject: "Verification code for password reset",
+//         text: null,
+//         html: `<span>Your Verification code is ${otp}</span>`,
+//       };
+
+//       // Render the EJS template
+//       ejs.renderFile(
+//         __dirname + "/otp.ejs",
+//         {
+//           name: "donotreply.v4x.org",
+//           action_url: otp,
+//         },
+//         async function (err, mail) {
+//           if (err) {
+//             console.error("Error rendering EJS template:", err);
+//             return res.status(500).send("Server error");
+//           }
+
+//           // Send the email with the EJS template as HTML
+//           const mailOptions = {
+//             from: process.env.EMAIL,
+//             to: req.body.email,
+//             subject: "Verification code",
+//             html: mail,
+//           };
+
+//           transporter.sendMail(mailOptions, (error, info) => {
+//             if (error) {
+//               console.error("Error sending email:", error);
+//               return res.status(500).send("Server error");
+//             }
+//             res.json({ message: "Otp has been sent successfully !" });
+//           });
+//         }
+//       );
+//     }
+//   } catch (error) {
+//     console.error("Error resetting password:", error);
+//     res.status(500).send("Server error");
+//   }
+// });
+
+// router.put("/verify-reset-otp", async (req, res) => {
+//   try {
+//     let salt = 10;
+//     let hash_password = await bcrypt.hash(req.body.password, salt);
+//     let IsValid = await User.findOne({
+//       $and: [{ email: req.body.email }, { otp: req.body.otp }],
+//     });
+//     if (IsValid) {
+//       await User.findOneAndUpdate(
+//         { email: req.body.email },
+//         { password: hash_password },
+//         {
+//           returnOriginal: false,
+//         }
+//       );
+//       res
+//         .status(200)
+//         .json({ message: "You password have been changed successfully !" });
+//     } else {
+//       res.status(401).json({ message: "Wrong Otp !" });
+//     }
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// });
 
 module.exports = router;
