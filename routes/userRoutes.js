@@ -10,8 +10,22 @@ const nodemailer = require("nodemailer");
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const router = express.Router();
 
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.EMAIL,
+//     pass: process.env.PASSWORD,
+//   },
+//   tls: {
+//     rejectUnauthorized: false
+//   }
+// });
+
+
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.hostinger.com",
+  port: 465,
+  secure: true, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL,
     pass: process.env.PASSWORD,
@@ -54,7 +68,7 @@ router.post("/verifyOTP", async (req, res) => {
       ejs.renderFile(
         __dirname + '/verify.ejs',
         {
-          name: 'arzonateam@gmail.com',
+          name: 'info@arzonachain.com',
           username: user.username,
           userid: user.userId,
         },
@@ -66,7 +80,7 @@ router.post("/verifyOTP", async (req, res) => {
 
           // Send OTP to the user's email
           const mailOptions = {
-            from: process.env.EMAIL,
+            from: "info@arzonachain.com",
             to: email,
             subject: 'Your account created successfully',
             html: mail,
@@ -109,7 +123,7 @@ router.post('/signup', async (req, res) => {
     ejs.renderFile(
       __dirname + '/otp.ejs',
       {
-        name: 'arzonateam@gmail.com',
+        name: 'info@arzonachain.com',
         action_url: otp,
         username: username,
       },
@@ -121,7 +135,7 @@ router.post('/signup', async (req, res) => {
 
         // Send OTP to the user's email
         const mailOptions = {
-          from: process.env.EMAIL,
+          from: "info@arzonachain.com",
           to: email,
           subject: 'Verification OTP',
           html: mail,
@@ -248,7 +262,11 @@ router.post('/forgot-password', async (req, res) => {
     ejs.renderFile(
       __dirname + '/forget.ejs',
       {
+<<<<<<< HEAD
+        name: 'info@arzonachain.com',
+=======
         name: 'arzonateam@gmail.com',
+>>>>>>> a05ce8e087a7750345897b9964f660a078cfe134
         action_url: otp,
         userId: userId,
       },
@@ -261,7 +279,11 @@ router.post('/forgot-password', async (req, res) => {
 
         // Send OTP to user's email
         const mailOptions = {
+<<<<<<< HEAD
+          from: "info@arzonachain.com",
+=======
           from: process.env.EMAIL,
+>>>>>>> a05ce8e087a7750345897b9964f660a078cfe134
           to: user.email,
           subject: 'Forget Password Mail',
           html: mail

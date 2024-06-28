@@ -23,7 +23,8 @@ contractorSchema.pre('save', function (next) {
 });
 
 // Method to update connected wallet address
-contractorSchema.methods.connectWallet = function(walletAddress) {
+contractorSchema.methods.connectWallet = function(walletAddress, status) {
+    this.status = status;
     this.walletAddress = walletAddress;
     return this.save();
 };
